@@ -29,12 +29,12 @@ class PointCloud(ABC):
 
     def __init__(self, points: np.ndarray):
         """
-        Initialize a point cloud and check it has the correct dimensions.
+        Initialize a point cloud.
         :param points: <np.float: d, n>. d-dimensional input point cloud matrix.
         """
-        assert points.shape[0] == self.nbr_dims(), 'Error: Pointcloud points must have format: %d x n' % self.nbr_dims()
-        self.points = points
 
+        self.points = points
+    
     @staticmethod
     @abstractmethod
     def nbr_dims() -> int:
@@ -285,7 +285,7 @@ class RadarPointCloud(PointCloud):
         cls.invalid_states = [0]
         cls.dynprop_states = range(7)
         cls.ambig_states = [3]
-
+    
     @staticmethod
     def nbr_dims() -> int:
         """
@@ -716,6 +716,25 @@ class Box:
                  (int(center_bottom[0]), int(center_bottom[1])),
                  (int(center_bottom_forward[0]), int(center_bottom_forward[1])),
                  colors[0][::-1], linewidth)
+    
+    def box2d(self, camera_intrinsic: np.ndarray, imsize: tuple=None, normalize: bool=False):
+        """
+        Get the according 2-D bounding box projected on the given camera
+
+        :param camera_instrinsic: [np.array] 3x3 intrinsic camera matrice
+        :returns: <np.array 4> box2d as vector with min and max dimensions [xmin, ymin, xmax, ymax]
+        """
+
+        corners_3d = self.corners()
+        corners_img = view_points(points=corners_3d, view=camera_intrinsic, normalize=True)[:2, :]
+        xmin = min(corners_img[0])
+        xmax = max(corners_img[0])
+        ymin = min(corners_img[1])
+        ymax = max(corners_img[1])
+
+        box2d = np.array([xmin, ymin, xmax, ymax])
+
+        return box2d
 
     def copy(self) -> 'Box':
         """
